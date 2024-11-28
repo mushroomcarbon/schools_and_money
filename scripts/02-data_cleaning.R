@@ -1,17 +1,48 @@
 #### Preamble ####
-# Purpose: Cleans the raw plane data recorded by two observers..... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 6 April 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Cleans the raw data recorded from dataontario and statcan
+# Author: Andrew Goh Yu Xuan
+# Date: 27 November 2024
+# Contact: andrew.goh@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
-
+# Pre-requisites: the aforementioned raw data
 #### Workspace setup ####
+library(dplyr)
 library(tidyverse)
-
+library(readxl)
 #### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+raw_data <- read_excel(here::here("./data/raw_data/academic_performance.xlsx"))
+
+cleaned_data <- raw_data %>%
+  select(-contains("Progress"), 
+         -contains("Credit Accumulation"), 
+         -contains("Results"), 
+         -contains("Language"),
+         -contains("Type"),
+         -contains("Five")) %>%
+  drop_na()  
+
+raw_data_2 <- read_csv(here::here("./data/raw_data/school_expenditures.csv"))
+
+cleaned_data_2 <- raw_data_2 %>%
+  slice(c(1, 16, 47)) %>%  # Select specific rows
+  select(10:ncol(raw_data_2))       # Select columns from the 10th onward
+
+data_values <- cleaned_data_2[1:3, ]
+# Transpose data_values to align with board numbers
+data_values <- t(data_values)
+data_values <- as.data.frame(data_values)
+colnames(data_values) <- c("Board Number", "Total Expenses", "Expenditure on Facilities")  # Assign new column names
+
+
+# Merge the data based on board_number
+merged_data <- cleaned_data %>%
+  left_join(data_values, by = "Board Number")
+
+# View the final merged dataset
+head(merged_data)
+
+
+
 
 cleaned_data <-
   raw_data |>

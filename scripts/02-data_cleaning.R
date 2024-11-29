@@ -38,38 +38,58 @@ colnames(data_values) <- c("Board Number", "Total Expenses", "Expenditure on Fac
 merged_data <- cleaned_data %>%
   left_join(data_values, by = "Board Number")
 
-# View the final merged dataset
-head(merged_data)
 
 
+table3 <- read_excel(here::here("./data/raw_data/education_indicators.xlsx"))
 
+relevant_data <- table3 %>%
+  select(board_number = 1, 
+         enrolment = 22, 
+         percent_low_income = 47, 
+         percent_no_degree = 48)
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
+relevant_data <- relevant_data %>%
   mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
-  mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+    enrolment = as.numeric(enrolment),
+    percent_low_income = as.numeric(percent_low_income),
+    percent_no_degree = as.numeric(percent_no_degree)
+  )
 
-#### Save data ####
-write_csv(cleaned_data, "outputs/data/analysis_data.csv")
+# Filter out rows where numeric columns have NA (invalid conversion)
+relevant_data <- relevant_data %>%
+  filter(!is.na(enrolment), !is.na(percent_low_income), !is.na(percent_no_degree))
+
+
+# Group by board_number and calculate weighted averages for percentages
+aggregated_data <- relevant_data %>%
+  group_by(board_number) %>%
+  summarise(
+    total_enrolment = sum(enrolment, na.rm = TRUE),
+    percent_low_income = sum(percent_low_income * enrolment, na.rm = TRUE) / total_enrolment,
+    percent_no_degree = sum(percent_no_degree * enrolment, na.rm = TRUE) / total_enrolment
+  )
+
+aggregated_data <- aggregated_data %>%
+  rename("Board Number" = board_number)
+
+final_data <- merged_data %>%
+  left_join(aggregated_data, by = 'Board Number')
+
+final_data <- final_data%>%
+  rename("Total Enrolment" = total_enrolment)
+
+final_data <- final_data%>%
+  rename("Four Year Graduation Rate" = `Four Year Graduation Rate 2019-2020 Grade 9 Cohort`)
+
+final_data <- final_data %>%
+  mutate(
+    `Expenditure on Facilities` = as.numeric(`Expenditure on Facilities`),
+    `Four Year Graduation Rate` = as.numeric(`Four Year Graduation Rate`),
+    `Total Expenses` = as.numeric(`Total Expenses`),
+    percentage_spent_on_facilities = (`Expenditure on Facilities` / `Total Expenses`) * 100
+  )
+
+final_data <- final_data %>%
+  mutate(across(where(is.numeric), ~ round(. , 3)))
+
+

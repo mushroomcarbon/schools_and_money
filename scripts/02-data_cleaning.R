@@ -24,8 +24,8 @@ cleaned_data <- raw_data %>%
 raw_data_2 <- read_csv(here::here("./data/raw_data/school_expenditures.csv"))
 
 cleaned_data_2 <- raw_data_2 %>%
-  slice(c(1, 16, 47)) %>%  # Select specific rows
-  select(10:ncol(raw_data_2))       # Select columns from the 10th onward
+  slice(c(1, 16, 46)) %>%  # Select specific rows
+  select(9:ncol(raw_data_2))       # Select columns from the 10th onward
 
 data_values <- cleaned_data_2[1:3, ]
 # Transpose data_values to align with board numbers

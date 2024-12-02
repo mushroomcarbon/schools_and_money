@@ -1,15 +1,15 @@
 #### Preamble ####
-# Purpose: Downloads and saves the data from [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 11 February 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Downloads and saves the data from data.ontario.ca
+# Author: Andrew Yu Xuan Goh
+# Date: 30 November 2024
+# Contact: andrew.goh@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
-
+# Pre-requisites: None
+#### Workspace setup ####
 library(httr)
 library(here)
 
+#### Download data ####
 # Define the URL and local file path
 url <- "https://data.ontario.ca/dataset/71244894-f3e1-4be0-a69a-9bdc4eb45ac1/resource/9d81dc27-32ef-4864-94b5-f09950d00c72/download/sbpr_data_table_en_sept2024.xlsx"
 referrer <- "https://data.ontario.ca/dataset/71244894-f3e1-4be0-a69a-9bdc4eb45ac1"

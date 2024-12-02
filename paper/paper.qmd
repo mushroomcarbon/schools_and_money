@@ -218,12 +218,12 @@ plot(first_model, "rhat")
 
 # References
 
-https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=1810000402
-
 https://data.ontario.ca/dataset/school-board-achievements-and-progress/resource/9d81dc27-32ef-4864-94b5-f09950d00c72
 
 https://data.ontario.ca/dataset/school-board-financial-reports-estimates-revised-estimates-and-financial-statements/resource/56598892-c180-4f0d-bde5-63f971d6ef9a
 
 https://data.ontario.ca/dataset/school-information-and-student-demographics/resource/e0e90bd5-d662-401a-a6d2-60d69ac89d14
 
-https://www150.statcan.gc.ca/n1/en/catalogue/81-582-X
+https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1810000501
+
+https://stats.stackexchange.com/questions/11676/pseudo-r-squared-formula-for-glms

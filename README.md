@@ -1,30 +1,22 @@
-# Starter folder
+# A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors
 
 ## Overview
 
-This repo provides students with a foundation for their own projects associated with *Telling Stories with Data*. You do not need every aspect for every paper and you should delete aspects that you do not need.
+This repo contains the related scripts, files, and other information related to the creation and presentation of the paper "A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors", which analyzes the correlations between various predictors related to Ontario School District data and the average 4-year graduation rate of the district. 
 
 
 ## File Structure
 
 The repo is structured as:
 
--   `data/raw_data` contains the raw data as obtained from X.
+-   `data/raw_data` contains the raw data as obtained from Ontario Open Data.
 -   `data/analysis_data` contains the cleaned dataset that was constructed.
 -   `model` contains fitted models. 
--   `other` contains relevant literature, details about LLM chat interactions, and sketches.
+-   `other` contains detailed LLM chat interaction logs and sketches.
 -   `paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
--   `scripts` contains the R scripts used to simulate, download and clean data.
+-   `scripts` contains the R scripts used to simulate, download and clean data, as well as generate models and test the cleaned and simulated datasets.
 
 
 ## Statement on LLM usage
 
-Aspects of the code were written with the help of the auto-complete tool, Codriver. The abstract and introduction were written with the help of ChatHorse and the entire chat history is available in inputs/llms/usage.txt.
-
-## Some checks
-
-- [ ] Change the rproj file name so that it's not starter_folder.Rproj
-- [ ] Change the README title so that it's not Starter folder
-- [ ] Remove files that you're not using
-- [ ] Update comments in R scripts
-- [ ] Remove this checklist
+Textual elements in the paper and aspects of the code were written with the help of the chatbot, ChatGPT. The entire chat history is available in inputs/llms/usage.txt.

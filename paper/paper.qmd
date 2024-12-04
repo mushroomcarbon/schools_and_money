@@ -1,10 +1,10 @@
 ---
-title: "Facilities Spending and Socioeconomic Factors Show Strong Correlation with Ontario School District Graduation Rates"
+title: "A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors"
 author: Andrew Goh
 thanks: "Code and data are available at: https://github.com/mushroomcarbon/schools_and_money"
 date: today
 date-format: long
-abstract: "Using data from Ontario's school board achievement, financial, and demographic datasets, we analyze the relationship between various district-level factors and four-year graduation rates. Through polynomial regression analysis, we find that the percentage of households without post-secondary degrees and facilities spending have significant negative correlations with graduation rates, while per-student expenses show a non-linear relationship. These findings suggest that socioeconomic factors and resource allocation decisions significantly impact academic outcomes, with implications for education policy and resource distribution in Ontario school districts."
+abstract: "Using data from Ontario's school board achievement, financial, and demographic datasets, we analyze the relationship between various district-level factors and four-year graduation rates. Through polynomial regression analysis, we find that the percentage of households without post-secondary degrees and relative spending on facilities have significant negative correlations with graduation rates (-0.136, -0.197), while per-student expenses show a non-linear relationship. These findings suggest that socioeconomic factors and resource allocation decisions have statistically significant impacts on academic outcomes, with implications for education policy and resource distribution in Ontario school districts."
 format: pdf
 header-includes:
   - \usepackage{float}
@@ -53,32 +53,32 @@ data_scaled <- analysis_data %>%
 # Load the polynomial model from the RDS file
 poly_model <- readRDS(here("models", "poly_model.rds"))
 lm_model <- readRDS(here("models", "lm_model.rds"))
+ridge_model <- readRDS(here("models", "ridge_model.rds"))
+lasso_model <- readRDS(here("models", "lasso_model.rds"))
 
 ```
 
-
 # Introduction
 
-The relationship between educational resources and academic outcomes has been a central focus of education policy research, particularly in publicly funded school systems. In Ontario, where school boards receive varying levels of funding and serve communities with diverse socioeconomic profiles, understanding how different factors influence student success is crucial for effective policy-making [@ontarioeducation].
+The relationship between educational resources and academic outcomes has been a central focus of education policy research, particularly in publicly funded school systems. In Ontario, where school boards receive varying levels of funding and serve communities with diverse socioeconomic profiles, understanding how different factors influence student success is crucial for effective policy-making [@campbell].
 
-Recent studies have suggested that both financial resources and community characteristics play significant roles in determining student outcomes [@educationresources; @socioeconomic]. However, the specific mechanisms through which these factors interact, particularly in the Ontario context, remain unclear. This gap in understanding is particularly relevant given Ontario's significant investment in education, with annual spending exceeding $31 billion [@ontariobudget].
+Recent studies have suggested that both financial resources and community characteristics play significant roles in determining student outcomes [@financial_support_academic_performance; @socioeconomic_status_achievement]. However, the specific mechanisms through which these factors interact, particularly in the Ontario context, remain unclear. This gap in understanding is particularly relevant given Ontario's significant investment in education, with annual spending projected to be approximately \$37.6 billion [@opsba_budget_overview].
 
-Our paper examines how various district-level factors—including financial allocations, socioeconomic indicators, and operational characteristics—correlate with four-year graduation rates across Ontario school boards. We focus specifically on the relationships between graduation rates and six key variables: total expenses, percentage of households without post-secondary degrees, percentage of low-income households, percentage of budget spent on facilities, per-student expenses, and total enrollment.
+Our paper examines how various district-level factors—including financial allocations, socioeconomic indicators, and operational characteristics—correlate with four-year graduation rates across Ontario school boards. We focus specifically on the relationships between graduation rates and five key variables: the percentage of households without post-secondary degrees, the percentage of low-income households, the percentage of the total budget spent on facilities, per-student expenses, and total enrolment.
 
 Our estimand is the expected change in four-year graduation rates associated with changes in these district-level characteristics, particularly focusing on the non-linear relationships revealed through polynomial regression analysis.
 
-The results suggest that socioeconomic factors, particularly the percentage of households without post-secondary degrees, have a significant negative linear relationship with graduation rates. Additionally, we find that the relationship between per-student expenses and graduation rates follows a U-shaped curve, suggesting diminishing returns up to a certain point. These findings have important implications for how educational resources might be most effectively allocated to improve student outcomes.
+The results suggest that socioeconomic factors, particularly the percentage of households without post-secondary degrees, show the strongest relationship with graduation rates, with each percentage point increase associated with a 0.136 percentage point decrease in graduation rates. We also find that the percentage of budget spent on facilities has a significant negative relationship with graduation rates, with each additional percentage point allocated to facilities associated with a 0.197 percentage point decrease in graduation rates. While per-student expenses show a U-shaped relationship with graduation rates, this relationship did not reach statistical significance at conventional levels. Our model explains approximately 36.5% of the variance in graduation rates, indicating that while these factors are important, there remain other unobserved variables influencing student outcomes.
 
 The remainder of this paper is organized as follows: @sec-data describes our dataset and measurement approach, @sec-model outlines our polynomial regression methodology, @sec-results presents our findings, and @sec-discussion explores the implications and limitations of our analysis.
-
-
 
 # Data {#sec-data}
 
 ## Overview
+
 We use the statistical programming language R [@citer] for the analysis and presentation of the project. The tidyverse [@tidyverse] ecosystem, particularly dplyr [@dplyr], was used for data manipulation. For model development and evaluation, we utilized caret [@caret] for model training and glmnet [@glmnet1; @glmnet2; @glmnet3] for regularized regression methods. The arrow [@arrow] package was employed for efficient data reading and writing, while broom [@broom] was used for converting statistical objects into tidy data frames. Additional file management was facilitated by the here [@here] package.
 
-In order to build a model predicting the effect that various variables on the school-district-level have on their academic successes, we used three datasets from the Ontario government's Open Data portal: the School Board Achievements and Progress dataset [@achievements], the School Board Financial Reports dataset [@financial], and the School Information and Student Demographics dataset [@demographics], each recording different information on school district organised by district ID. 
+In order to build a model predicting the effect that various variables on the school-district-level have on their academic successes, we used three datasets from the Ontario government's Open Data portal: the School Board Achievements and Progress dataset [@achievements], the School Board Financial Reports dataset [@financial], and the School Information and Student Demographics dataset [@demographics], each recording different information on school district organised by district ID.
 
 After cleaning the data by selecting the desired variables from the three different datasets, combining them into one file, and removing N/A variables, we obtain data on the Four Year Graduation Rate, Total Expenses, Expenditure on Facilities, and Total Enrolment values for 50 different Ontarian school districts, as well as the percentage of students that are identified as low income, the percentage of students without a parent that has a school degree/certificate, the percentage of total expenses spent on facilities, and the expenses per quota in each of the aforementioned districts.
 
@@ -88,7 +88,7 @@ As a measurement of academic success, the 4-year graduation rate was chosen due 
 
 Data from the School Board Progress Report is either self-reported by schools or obtained by the EQAO (Education Quality and Accountability Office), as described by the Ministry of Education of Ontario [@ontario_education_faq]. Schools are expected to self-report internal information such as class size changes and financial status, whereas indicators of academic progress on a district-wide-level, such as standardized testing results and graduation rates, fall under the authority of the EQAO. EQAO's data collection and processing methodology follows the Statistics Canada Quality Guidelines [@statcan_quality_assurance], and the aforementioned standardized assessments that EQAO records data on are administered by EQAO itself [@eqao_data_quality].
 
-Data regarding school districts' financial reports is collected by the Government of Ontario via the Education Financial Information System (EFIS). Using EFIS, school districts submit their financial information to the Ontario Ministry of Education, where they are then compiled into a single dataset. 
+Data regarding school districts' financial reports is collected by the Government of Ontario via the Education Financial Information System (EFIS). Using EFIS, school districts submit their financial information to the Ontario Ministry of Education, where they are then compiled into a single dataset.
 
 The School Information and Demographics dataset is based on a combination of school-submitted information and EQAO data. In light of privacy concerns such as data from this dataset potentially being traced back to individual students or small groups of students, random error and suppressing is utilised in this dataset [@ontario_sift_glossary]. Specifically, when the number of students referred to by each individual cell in the table is less than 50, then the cell is marked as SP, or suppressed. Values concerning more students, on the other hand, have their percentages rounded up/down at random to a certain granularity, making sure that there is always a potential error bound of at most 5 students for each dataset.
 
@@ -96,7 +96,7 @@ Several important limitations that must be acknowledged exist in the data collec
 
 ## Data Summary
 
-@tbl-summary presents an overview of the summary statistics of our key variables across Ontario school boards, and @tbl-snapshot presents a snapshot of the data itself.
+@tbl-summary presents an overview of the summary statistics of our key variables across Ontario school boards, and @tbl-snapshot1 and @tbl-snapshot2 presents a snapshot of the data itself.
 
 ```{r}
 #| label: tbl-summary
@@ -129,7 +129,7 @@ summary_stats %>%
     Median = "Median"
   ) %>%
   tab_footnote(
-    footnote = "Total Expenses shown in billions ($), Enrollment in thousands, percentages as raw values, expenses per student in dollars.",
+    footnote = "Total Expenses shown in billions ($), Enrolment in thousands, percentages as raw values, expenses per student in dollars.",
     locations = cells_column_labels(columns = Mean)
   )
 ```
@@ -137,8 +137,8 @@ summary_stats %>%
 \FloatBarrier
 
 ```{r}
-#| label: tbl-snapshot
-#| tbl-cap: "Sample of First Five Rows from Ontario School Board Dataset"
+#| label: tbl-snapshot1
+#| tbl-cap: "Sample of First Five Rows from Ontario School Board Dataset (Part 1)"
 #| echo: false
 #| warning: false
 #| message: false
@@ -153,7 +153,7 @@ knitr::kable(
            `Four Year Graduation Rate`,
            `Total Expenses`) |>
     slice(1:5) |>
-    mutate(Region = str_replace(Region, "Region ", "")),  # Remove the word "Region"
+    mutate(Region = str_replace(Region, "Region ", "")),
   col.names = c("Board ID",
                 "Name",
                 "Region",
@@ -161,8 +161,11 @@ knitr::kable(
                 "Grad Rate",
                 "Total Expenses ($)"),
   digits = c(0, 0, 0, 0, 3, 3),
-  booktabs = TRUE
-)
+  booktabs = TRUE)
+```
+```{r}
+#| label: tbl-snapshot2
+#| tbl-cap: "Sample of First Five Rows from Ontario School Board Dataset (Part 2)"
 
 # Second half of columns
 knitr::kable(
@@ -175,14 +178,13 @@ knitr::kable(
            expenses_per_quota) |>
     slice(1:5),
   col.names = c("Facility Expenses ($)",
-                "Enrollment",
+                "Enrolment",
                 "Low Income (%)",
                 "No Degree (%)",
                 "Facilities (%)",
                 "$/Student"),
   digits = c(3, 0, 3, 3, 3, 3),
-  booktabs = TRUE
-)
+  booktabs = TRUE)
 ```
 
 \FloatBarrier
@@ -290,7 +292,7 @@ ggplot(analysis_data, aes(x = percent_low_income)) +
 
 \FloatBarrier
 
-The percentage of students from low-income households ranges from 10.35% to 25.92%, with a mean of 15.77%. This variable provides insight into the socioeconomic composition of each school board's student population.
+The percentage of students from low-income households ranges from 10.35% to 25.92%, with a mean of 15.77%. This variable describes the socioeconomic composition of each school board's student population, and we can see from @fig-income the diversity of socioeconomic compositions *between* school districts.
 
 ### Enrolment
 
@@ -313,15 +315,15 @@ ggplot(analysis_data, aes(x = `Total Enrolment`/1000)) +
 
 ## Feature Selection
 
-The selection of these specific predictor variables was guided by both theoretical relevance and statistical considerations regarding multicollinearity. Initial exploratory analysis revealed strong correlations between several potential predictors. For instance, total expenses and total enrollment showed an extremely high correlation (r > 0.95), as larger boards naturally have higher total expenses. Similarly, various socioeconomic indicators such as median household income, unemployment rates, and low-income status demonstrated substantial overlap in their variation. To address these multicollinearity concerns, we selected representative variables that captured distinct aspects of school board characteristics while minimizing redundancy:
+The selection of these specific predictor variables was guided by both theoretical relevance and statistical considerations regarding multicollinearity. Initial exploratory analysis revealed strong correlations between several potential predictors. For instance, total expenses and total enrolment showed an extremely high correlation (r \> 0.95), as larger boards naturally have higher total expenses. Similarly, various socioeconomic indicators such as median household income, unemployment rates, and low-income status demonstrated substantial overlap in their variation. To address these multicollinearity concerns, we selected representative variables that captured distinct aspects of school board characteristics while minimizing redundancy:
 
-1. Per-student expenses was chosen over total expenses to control for board size and provide a standardized measure of financial resources.
+1.  Per-student expenses was chosen over total expenses to control for board size and provide a standardized measure of financial resources.
 
-2. Percentage spent on facilities was retained as it represents a unique aspect of resource allocation independent of overall spending levels, as well as being reminiscent of the author's initial driving question of whether increased spending on libraries would correlate with better academic performance.
+2.  Percentage spent on facilities was retained as it represents a unique aspect of resource allocation independent of overall spending levels, as well as being reminiscent of the author's initial driving question of whether increased spending on libraries would correlate with better academic performance.
 
-3. Among socioeconomic indicators, the percentage of low-income students and parental education levels were selected as they captured different dimensions of socioeconomic status while maintaining relatively low correlation with each other (r < 0.4).
+3.  Among socioeconomic indicators, the percentage of low-income students and parental education levels were selected as they captured different dimensions of socioeconomic status while maintaining relatively low correlation with each other (r \< 0.4).
 
-4. Total enrolment was included as a control variable to account for potential scale effects that might influence graduation rates independently of other factors.
+4.  Total enrolment was included as a control variable to account for potential scale effects that might influence graduation rates independently of other factors.
 
 Feature selection helps ensure our analysis avoids the statistical issues associated with multicollinearity while still capturing the key factors that may influence academic performance.
 
@@ -333,64 +335,147 @@ While the data is presented in its raw form above, all variables are standardize
 
 ## Model Set-up
 
-We evaluate several regression models to understand the relationship between school board characteristics and graduation rates:
+We evaluate the performance of several regression models to understand the relationship between school board characteristics and graduation rates:
 
 ### Linear Regression
-Our baseline model is a simple linear regression:
 
+We begin with our baseline model, a simple linear regression model:
+
+```{=tex}
 \begin{align} 
 y_i &= \beta_0 + \beta_1x_{1i} + \beta_2x_{2i} + \beta_3x_{3i} + \beta_4x_{4i} + \beta_5x_{5i} + \epsilon_i
 \end{align}
+```
+Where $y_i$ is the Four Year Graduation Rate for school board $i$, $\epsilon_i$ is the error term, and $x_{1i}$ to $x_{5i}$ are the predictor variables: percentage of students without a parent holding a post-secondary degree, percentage of low-income students, percentage spent on facilities, expenses per student, and total enrolment.
 
-Where $y_i$ is the Four Year Graduation Rate for school board $i$, $\epsilon_i$ is the error term, and $x_{1i}$ to $x_{5i}$ are the predictor variables: percentage of students without a parent holding a post-secondary degree, percentage of low-income students, percentage spent on facilities, expenses per student, and total enrollment.
+### Shrinkage Regression
 
-### Ridge Regression
-To address potential multicollinearity between our predictors, we implement Ridge regression:
+To address potential multicollinearity and model overcomplexity between our predictors, we also implemented Ridge and Lasso regression models, respectively:
 
+```{=tex}
 \begin{align}
 \min_{\beta} \sum_{i=1}^{n} (y_i - \beta_0 - \sum_{j=1}^{p} \beta_j x_{ij})^2 + \lambda \sum_{j=1}^{p} \beta_j^2
 \end{align}
-
-Where $\lambda$ is the regularization parameter chosen through cross-validation.
-
-### Lasso Regression
-We also implement Lasso regression for potential variable selection:
-
+```
+```{=tex}
 \begin{align}
 \min_{\beta} \sum_{i=1}^{n} (y_i - \beta_0 - \sum_{j=1}^{p} \beta_j x_{ij})^2 + \lambda \sum_{j=1}^{p} |\beta_j|
 \end{align}
+```
+Where $\lambda$ is the regularization parameter chosen through cross-validation and the x-values are the same as above.
 
 ### Polynomial Regression
-Our final and chosen model is a polynomial regression of degree 2:
 
+Finally, a polynomial regression model of degree 2 was fitted to the data to account for non-linear relationships between the data. The model is structured as follows:
+
+```{=tex}
 \begin{align}
 y_i &= \beta_0 + \sum_{j=1}^{5} (\beta_{j1}x_{ji} + \beta_{j2}x_{ji}^2) + \epsilon_i
 \end{align}
-
+```
 Where $\beta_{j1}$ represents the linear term coefficient and $\beta_{j2}$ represents the quadratic term coefficient for each predictor.
 
 ## Model Selection
 
-We chose the polynomial regression model for several reasons:
+After comparing the results of the models and assessing how well they each fit to the data respectively, the polynomial regression model was chosen due to multiple reasons:
 
-1. **Non-linear Relationships**: Initial exploratory data analysis revealed non-linear relationships between several predictors and graduation rates, particularly for expenses per student and total enrollment.
+1.  **Non-linear Relationships**: Initial exploratory data analysis revealed non-linear relationships between several predictors and graduation rates, particularly for expenses per student and total enrolment. This suggests that a polynomial regression model potentially can capture more trends in the data, more accurately, compared to a linear model, though the latter is simpler. The tradeoff in this case is sensible due to the added model complexity actively capturing statistically significant trends in the data.
 
-2. **Model Comparison**: Comparing Mean Squared Error (MSE) across models:
+2.  **Model Comparison**: Comparing Root Mean Squared Error (RMSE) across models:
 
-[MSE SECTION HERE]
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#### Workspace setup ####
+library(tidyverse)
+library(arrow)
+library(broom)
+library(caret)
+library(glmnet)      # For Ridge and Lasso regression
 
-The polynomial regression model showed the lowest MSE, indicating better fit to the data.
+#### Load data ####
+analysis_data <- read_parquet(here::here("./data/analysis_data/analysis_data.parquet"))
 
-3. **Interpretability**: While Ridge and Lasso regressions help with multicollinearity and variable selection respectively, they don't capture the non-linear relationships we observe in the data. The polynomial model allows us to interpret both linear and quadratic effects of our predictors on graduation rates.
+#### Data Preprocessing ####
+data <- analysis_data %>%
+  dplyr::select(`Four Year Graduation Rate`, 
+                percent_no_degree, 
+                percent_low_income, 
+                percentage_spent_on_facilities,
+                expenses_per_quota,
+                `Total Enrolment`)
 
-4. **Statistical Significance**: As shown in our model summary, several quadratic terms (particularly for expenses per quota) are statistically significant, confirming the value of including these higher-order terms.
+# Normalize data
+data_scaled <- data %>%
+  mutate(across(everything(), ~ scale(.) %>% as.vector()))
+
+# Prepare data for glmnet
+x <- model.matrix(`Four Year Graduation Rate` ~ ., data_scaled)[, -1]
+y <- data_scaled$`Four Year Graduation Rate`
+
+#### Linear Regression Model ####
+lm_model <- lm(`Four Year Graduation Rate` ~ ., data = data_scaled)
+
+#### Ridge Regression ####
+ridge_cv <- cv.glmnet(x, y, alpha = 0)
+ridge_best_lambda <- ridge_cv$lambda.min
+ridge_model <- glmnet(x, y, alpha = 0, lambda = ridge_best_lambda)
+
+#### Lasso Regression ####
+lasso_cv <- cv.glmnet(x, y, alpha = 1)
+lasso_best_lambda <- lasso_cv$lambda.min
+lasso_model <- glmnet(x, y, alpha = 1, lambda = lasso_best_lambda)
+
+#### Polynomial Regression ####
+poly_model <- lm(`Four Year Graduation Rate` ~ 
+                   poly(percent_no_degree, 2) + 
+                   poly(percent_low_income, 2) +
+                   poly(percentage_spent_on_facilities, 2) +
+                   poly(expenses_per_quota, 2) +
+                   poly(`Total Enrolment`, 2),
+                 data = data_scaled)
+
+#### Model Comparison with MSE ####
+# Predictions
+lm_preds <- predict(lm_model, newdata = data_scaled)
+poly_preds <- predict(poly_model, newdata = data_scaled)
+ridge_preds <- predict(ridge_model, newx = x, s = ridge_best_lambda)
+lasso_preds <- predict(lasso_model, newx = x, s = lasso_best_lambda)
+
+# Calculate RMSE
+lm_rmse <- sqrt(mean((lm_preds - data_scaled$`Four Year Graduation Rate`)^2))
+poly_rmse <- sqrt(mean((poly_preds - data_scaled$`Four Year Graduation Rate`)^2))
+ridge_rmse <- sqrt(mean((ridge_preds - y)^2))
+lasso_rmse <- sqrt(mean((lasso_preds - y)^2))
+
+# Model Comparison Table
+model_comparison <- tibble(
+  Model = c("Linear Regression", "Polynomial Regression", "Ridge", "Lasso"),
+  Metric = c(
+    paste("RMSE: ", round(lm_rmse, 3)),
+    paste("RMSE: ", round(poly_rmse, 3)),
+    paste("RMSE: ", round(ridge_rmse, 3)),
+    paste("RMSE: ", round(lasso_rmse, 3))
+  )
+)
+
+print(model_comparison)
+```
+
+The polynomial regression model showed the lowest MSE, which indicates that it has a better fit to the data and is hence a "better" model to use in this case [@validation].
+
+3.  **Interpretability**: While Ridge and Lasso regressions help with multicollinearity and variable selection respectively, they don't capture the non-linear relationships we observe in the data. The polynomial model allows us to interpret both linear and quadratic effects of our predictors on graduation rates.
+
+4.  **Statistical Significance**: As shown in our model summary, several quadratic terms (particularly for expenses per quota) are statistically significant, confirming the value of including these higher-order terms.
 
 ## Model Validation and Diagnostics
 
 ### Residual Analysis
+
 ```{r}
-#| label: fig-residuals
-#| fig-cap: Residual Diagnostics for Polynomial Regression Model
+#| label: fig-qq
+#| fig-cap: Normal QQ Plot for Polynomial Regression Model
 #| echo: false
 #| message: false
 #| warning: false
@@ -403,6 +488,13 @@ ggplot(data.frame(residuals = residuals(poly_model)), aes(sample = residuals)) +
        x = "Theoretical Quantiles",
        y = "Sample Quantiles") +
   theme_minimal()
+```
+```{r}
+#| label: fig-residuals
+#| fig-cap: Residuals vs Fitted Values Plot for Polynomial Regression Model
+#| echo: false
+#| message: false
+#| warning: false
 
 # Residuals vs Fitted
 ggplot(data.frame(fitted = fitted(poly_model), 
@@ -418,7 +510,7 @@ ggplot(data.frame(fitted = fitted(poly_model),
 
 \FloatBarrier
 
-@fig-residuals shows our residual diagnostics. The Q-Q plot suggests that residuals are approximately normally distributed, while the Residuals vs Fitted plot shows no clear pattern, indicating homoscedasticity of residuals.
+@fig-qq and @fig-residuals show our residual diagnostics. The Q-Q plot suggests that residuals are approximately normally distributed, while the Residuals vs Fitted plot shows no clear pattern, indicating homoscedasticity of residuals.
 
 ### Model Performance Metrics
 
@@ -505,20 +597,19 @@ The cross-validation results suggest that our model's performance is stable acro
 
 Our polynomial regression model relies on several key assumptions:
 
-1. **Linearity**: While we don't assume linear relationships between predictors and the response, we assume that the quadratic terms adequately capture the non-linear relationships.
+1.  **Linearity**: While we don't assume linear relationships between predictors and the response, we assume that the quadratic terms adequately capture the non-linear relationships.
 
-2. **Independence**: We assume that graduation rates of different school boards are independent of each other, which is reasonable given the administrative separation between boards.
+2.  **Independence**: We assume that graduation rates of different school boards are independent of each other, which is reasonable given the administrative separation between boards.
 
-3. **Homoscedasticity**: As shown in our residual plot, the variance of residuals appears relatively constant across fitted values.
+3.  **Homoscedasticity**: As shown in our residual plot, the variance of residuals appears relatively constant across fitted values.
 
-4. **Normality**: The Q-Q plot suggests that residuals are approximately normally distributed.
+4.  **Normality**: The Q-Q plot suggests that residuals are approximately normally distributed.
 
 These diagnostics and validations support our choice of polynomial regression as the final model, though we acknowledge the limitations discussed in @sec-discussion.
 
-
 # Results {#sec-results}
 
-Our polynomial regression analysis reveals several significant relationships between school board characteristics and graduation rates. We present these results in order of statistical significance.
+We present the results from our polynomial regression analysis in order of statistical significance.
 
 ## Primary Findings
 
@@ -553,7 +644,7 @@ tidy_poly %>%
 
 ### Parental Education
 
-The percentage of households without post-secondary degrees shows the strongest relationship with graduation rates (β = -3.627, p = 0.003). This linear relationship suggests that for every standard deviation increase in the percentage of households without degrees, graduation rates decrease by approximately 3.6 percentage points, holding other factors constant.
+The percentage of households without post-secondary degrees shows the strongest relationship with graduation rates (β = -3.627, p = 0.003). After converting from standardized units back to real-world units, this relationship suggests that for every one percentage point increase in households without post-secondary degrees, graduation rates decrease by approximately 0.136 percentage points, holding other factors constant.
 
 ### Facilities Spending
 
@@ -576,7 +667,7 @@ ggplot(data_scaled, aes(x = percentage_spent_on_facilities,
 
 \FloatBarrier
 
-The percentage spent on facilities shows a significant negative linear relationship (β = -2.402, p = 0.026), as illustrated in @fig-facilities. This suggests that boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates, possibly indicating trade-offs between infrastructure spending and other educational resources.
+The percentage spent on facilities shows a significant negative linear relationship (β = -2.435, p = 0.023), as illustrated in @fig-facilities. After converting from standardized units back to real-world units, this suggests that for each additional percentage point of budget allocated to facilities, graduation rates decrease by about 0.197 percentage points, holding other factors constant. In other words, boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates, possibly indicating trade-offs between infrastructure spending and other educational resources.
 
 ### Per-Student Expenses
 
@@ -599,45 +690,32 @@ ggplot(data_scaled, aes(x = expenses_per_quota,
 
 \FloatBarrier
 
-Per-student expenses show a significant quadratic relationship (β = 3.444, p = 0.013), as shown in @fig-expenses. The U-shaped relationship suggests that while initial increases in per-student spending may be associated with lower graduation rates, there appears to be a threshold beyond which additional spending becomes positively associated with graduation rates.
+Per-student expenses show a marginally significant quadratic relationship (β = 1.932, p = 0.085), as shown in @fig-expenses. After converting from standardized units back to real-world units, while not significant at the conventional p < 0.05 level, there appears to be a U-shaped trend in the relationship between per-student spending and graduation rates. This suggests that graduation rates tend to decrease with initial increases in per-student spending up to a certain threshold, after which additional spending is associated with increasing graduation rates. However, given the lack of statistical significance, these trends should be interpreted with caution.
 
 ## Secondary Findings
 
-### Total Expenses and Enrollment
-
-While neither total expenses nor total enrollment showed statistically significant relationships with graduation rates at the conventional p < 0.05 level, both variables exhibited potentially meaningful trends:
+### Total Expenses and Enrolment
 
 ```{r}
 #| label: fig-size
 #| fig-cap: Relationships Between School Board Size Metrics and Graduation Rates
-#| layout-ncol: 2
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(data_scaled, aes(x = `Total Expenses`, 
-                        y = `Four Year Graduation Rate`)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", 
-              formula = y ~ poly(x, 2), 
-              se = TRUE) +
-  labs(x = "Total Expenses (Standardized)",
-       y = "Graduation Rate (Standardized)") +
-  theme_minimal()
-
 ggplot(data_scaled, aes(x = `Total Enrolment`, 
                         y = `Four Year Graduation Rate`)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", 
               formula = y ~ poly(x, 2), 
               se = TRUE) +
-  labs(x = "Total Enrollment (Standardized)",
+  labs(x = "Total Enrolment (Standardized)",
        y = "Graduation Rate (Standardized)") +
   theme_minimal()
 ```
 
 \FloatBarrier
 
-As shown in @fig-size, both total expenses and enrollment suggest potential non-linear relationships with graduation rates, though these relationships did not reach statistical significance in our model.
+As shown in @fig-size, Total Enrolment showed no statistically significant relationship with graduation rates (linear term: β = 0.249, p = 0.842; quadratic term: β = -0.186, p = 0.871). This suggests that the size of the school board, measured by enrollment, has minimal impact on graduation outcomes, with each additional thousand students associated with a non-significant change of 0.00053 percentage points in graduation rates once converted back into real-world units.
 
 ### Model Fit
 
@@ -659,8 +737,7 @@ ggplot(data_scaled, aes(x = fitted(poly_model),
 
 \FloatBarrier
 
-@fig-fit shows the relationship between predicted and actual graduation rates. The model explains approximately 40.4% of the variance in graduation rates (R² = 0.404), suggesting that while our identified factors are important, there remain other unobserved variables that influence graduation rates.
-
+@fig-fit shows the relationship between predicted and actual graduation rates. The model explains approximately 36.5% of the variance in graduation rates (R² = 0.3648), suggesting that while our identified factors are important, there remain other unobserved variables that influence graduation rates.
 
 # Discussion {#sec-discussion}
 
@@ -674,47 +751,49 @@ The complex relationship between per-student expenses and graduation rates is pa
 
 The negative relationship between facilities spending and graduation rates raises important questions about resource allocation. While maintaining adequate facilities is crucial for educational delivery, our findings suggest that boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates. This could indicate that:
 
-1. Some boards might be forced to prioritize urgent infrastructure needs over other educational resources
-2. Older facilities requiring more maintenance might be concentrated in areas facing other socioeconomic challenges
-3. There might be an optimal balance between infrastructure investment and direct educational spending
+1.  Some boards might be forced to prioritize urgent infrastructure needs over other educational resources
+2.  Older facilities requiring more maintenance might be concentrated in areas facing other socioeconomic challenges
+3.  There might be an optimal balance between infrastructure investment and direct educational spending
 
 ## Limitations
 
 Several limitations of our analysis should be noted:
 
 ### Data Constraints
-1. Our analysis is cross-sectional, looking at a single academic year (2019-2020)
-2. The COVID-19 pandemic may have influenced both spending patterns and graduation rates during this period
-3. We lack data on important factors such as:
-   - Teacher qualifications and experience
-   - Specific program offerings
-   - Student-level characteristics
+
+1.  Our analysis is cross-sectional, looking at a single academic year (2019-2020)
+2.  The COVID-19 pandemic may have influenced both spending patterns and graduation rates during this period
+3.  We lack data on important factors such as:
+    -   Teacher qualifications and experience
+    -   Specific program offerings
+    -   Student-level characteristics
 
 ### Methodological Considerations
-1. Our polynomial regression model, while capturing non-linear relationships, may not fully represent more complex interactions between variables
-2. The R-squared value of 0.404 suggests that substantial variation in graduation rates remains unexplained by our model
-3. The standardization of variables, while necessary for our analysis, makes direct interpretation of effect sizes less intuitive
+
+1.  Our polynomial regression model, while capturing non-linear relationships, may not fully represent more complex interactions between variables
+2.  The R-squared value of 0.404 suggests that substantial variation in graduation rates remains unexplained by our model
+3.  The standardization of variables, while necessary for our analysis, makes direct interpretation of effect sizes less intuitive
 
 ## Future Research Directions
 
 Several promising avenues for future research emerge from our findings:
 
-1. **Longitudinal Analysis**: Examining how these relationships evolve over time could provide insights into the long-term effects of different spending patterns and policy changes.
+1.  **Longitudinal Analysis**: Examining how these relationships evolve over time could provide insights into the long-term effects of different spending patterns and policy changes.
 
-2. **Program-Level Analysis**: Investigating specific educational programs and interventions could help identify which approaches are most effective at improving graduation rates, particularly in communities with lower educational attainment.
+2.  **Program-Level Analysis**: Investigating specific educational programs and interventions could help identify which approaches are most effective at improving graduation rates, particularly in communities with lower educational attainment.
 
-3. **Resource Allocation Optimization**: Developing models to help school boards optimize their resource allocation decisions, particularly regarding the balance between facilities maintenance and other educational spending.
+3.  **Resource Allocation Optimization**: Developing models to help school boards optimize their resource allocation decisions, particularly regarding the balance between facilities maintenance and other educational spending.
 
-4. **Policy Implications**: Studying how provincial funding formulas might be adjusted to better support boards facing particular challenges, such as aging infrastructure or high concentrations of socioeconomic disadvantage.
+4.  **Policy Implications**: Studying how provincial funding formulas might be adjusted to better support boards facing particular challenges, such as aging infrastructure or high concentrations of socioeconomic disadvantage.
 
 ## Broader Context
 
 Our findings contribute to the ongoing discussion about educational equity in Ontario. The strong relationship between community educational attainment and graduation rates suggests that breaking cycles of educational disadvantage may require interventions that extend beyond the school system itself. This might include:
 
-1. Community-based programs to support adult education
-2. Enhanced early childhood education initiatives
-3. Targeted support for communities with historically lower educational attainment
-4. Integrated approaches that address both educational and broader socioeconomic factors
+1.  Community-based programs to support adult education
+2.  Enhanced early childhood education initiatives
+3.  Targeted support for communities with historically lower educational attainment
+4.  Integrated approaches that address both educational and broader socioeconomic factors
 
 The complex relationships we've identified between financial resources and educational outcomes also suggest that policy makers should consider more nuanced approaches to school funding, moving beyond simple per-student funding formulas to consider the specific contexts and challenges faced by different school boards.
 
@@ -722,8 +801,7 @@ The complex relationships we've identified between financial resources and educa
 
 \appendix
 
-# Appendix {-}
-
+# Appendix {.unnumbered}
 
 # Additional data details
 
@@ -731,15 +809,6 @@ The complex relationships we've identified between financial resources and educa
 
 ## Posterior predictive check
 
-
-
 \newpage
 
-
 # References
-
-https://data.ontario.ca/dataset/school-board-achievements-and-progress/resource/9d81dc27-32ef-4864-94b5-f09950d00c72
-
-https://data.ontario.ca/dataset/school-board-financial-reports-estimates-revised-estimates-and-financial-statements/resource/56598892-c180-4f0d-bde5-63f971d6ef9a
-
-https://data.ontario.ca/dataset/school-information-and-student-demographics/resource/e0e90bd5-d662-401a-a6d2-60d69ac89d14

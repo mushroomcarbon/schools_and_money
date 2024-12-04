@@ -8,106 +8,82 @@
 #### Workspace setup ####
 library(tidyverse)
 library(arrow)
-library(brms)
 library(broom)
 library(caret)
+library(glmnet)      # For Ridge and Lasso regression
 
 #### Load data ####
-# Read analysis data from the parquet file
 analysis_data <- read_parquet(here::here("./data/analysis_data/analysis_data.parquet"))
-
-# Rename columns to remove spaces
 colnames(analysis_data) <- gsub(" ", "_", colnames(analysis_data))
 
-# Check the new column names
-colnames(analysis_data)
-
 #### Data Preprocessing ####
-# Select relevant columns for modeling
 data <- analysis_data %>%
   dplyr::select(Four_Year_Graduation_Rate, 
-         Total_Expenses, 
-         percent_no_degree, 
-         percent_low_income, 
-         percentage_spent_on_facilities)
+                percent_no_degree, 
+                percent_low_income, 
+                percentage_spent_on_facilities,
+                expenses_per_quota,
+                Total_Enrolment)
 
-# Normalize data using caret package for scaling
+# Normalize data
 data_scaled <- data %>%
   mutate(across(everything(), ~ scale(.) %>% as.vector()))
 
+# Prepare data for glmnet
+x <- model.matrix(Four_Year_Graduation_Rate ~ ., data_scaled)[, -1]
+y <- data_scaled$Four_Year_Graduation_Rate
+
 #### Linear Regression Model ####
-# Fit the linear regression model
-lm_model <- lm(Four_Year_Graduation_Rate ~ Total_Expenses + percent_no_degree + percent_low_income + percentage_spent_on_facilities, data = data_scaled)
+lm_model <- lm(Four_Year_Graduation_Rate ~ ., data = data_scaled)
 
-# Print model summary
-lm_summary <- summary(lm_model)
-lm_stats <- broom::tidy(lm_model)
+#### Ridge Regression ####
+ridge_cv <- cv.glmnet(x, y, alpha = 0)
+ridge_best_lambda <- ridge_cv$lambda.min
+ridge_model <- glmnet(x, y, alpha = 0, lambda = ridge_best_lambda)
 
-# Print R-squared and p-values
-print("Linear Model Summary:")
-print(lm_summary)
+#### Lasso Regression ####
+lasso_cv <- cv.glmnet(x, y, alpha = 1)
+lasso_best_lambda <- lasso_cv$lambda.min
+lasso_model <- glmnet(x, y, alpha = 1, lambda = lasso_best_lambda)
 
-# Calculate R-squared
-rsq <- lm_summary$r.squared
-print(paste("R-squared for Linear Regression: ", round(rsq, 3)))
+#### Polynomial Regression ####
+poly_model <- lm(Four_Year_Graduation_Rate ~ 
+                   poly(percent_no_degree, 2) + 
+                   poly(percent_low_income, 2) +
+                   poly(percentage_spent_on_facilities, 2) +
+                   poly(expenses_per_quota, 2) +
+                   poly(Total_Enrolment, 2),
+                 data = data_scaled)
 
-# Print p-values for each predictor
-print("P-values for each predictor in the linear regression model:")
-print(lm_stats)
+#### Model Comparison with MSE ####
+# Predictions
+lm_preds <- predict(lm_model, newdata = data_scaled)
+poly_preds <- predict(poly_model, newdata = data_scaled)
+ridge_preds <- predict(ridge_model, newx = x, s = ridge_best_lambda)
+lasso_preds <- predict(lasso_model, newx = x, s = lasso_best_lambda)
 
-#### Bayesian Linear Regression Model ####
-# Fit the Bayesian linear regression model using the brms package
-bayesian_model <- brm(
-  Four_Year_Graduation_Rate ~ Total_Expenses + percent_no_degree + percent_low_income + percentage_spent_on_facilities, 
-  data = data_scaled,
-  family = gaussian(),
-  iter = 2000, 
-  warmup = 1000, 
-  chains = 4
-)
+# Calculate MSE
+lm_mse <- mean((lm_preds - data_scaled$Four_Year_Graduation_Rate)^2)
+poly_mse <- mean((poly_preds - data_scaled$Four_Year_Graduation_Rate)^2)
+ridge_mse <- mean((ridge_preds - y)^2)
+lasso_mse <- mean((lasso_preds - y)^2)
 
-# Print model summary
-print("Bayesian Linear Model Summary:")
-print(summary(bayesian_model))
-
-# Extract and print the posterior statistics
-posterior_summary <- summary(bayesian_model)$fixed
-print("Bayesian Model Posterior Summary:")
-print(posterior_summary)
-
-#### Generalized Linear Model (GLM) ####
-# Fit the Generalized Linear Model (GLM) with a Gaussian family
-glm_model <- glm(Four_Year_Graduation_Rate ~ Total_Expenses + percent_no_degree + percent_low_income + percentage_spent_on_facilities, 
-                 data = data_scaled, 
-                 family = gaussian())
-
-# Print model summary
-glm_summary <- summary(glm_model)
-glm_stats <- broom::tidy(glm_model)
-
-# Print AIC and p-values
-print("GLM Model Summary:")
-print(glm_summary)
-
-# Calculate AIC for the GLM
-aic_glm <- AIC(glm_model)
-print(paste("AIC for GLM: ", round(aic_glm, 3)))
-
-# Print p-values for each predictor
-print("P-values for each predictor in the GLM model:")
-print(glm_stats)
-
-#### Model Comparison ####
-# Compare models using AIC for GLM and R-squared for LM
+# Model Comparison Table
 model_comparison <- tibble(
-  Model = c("Linear Regression", "GLM"),
-  R_squared_AIC = c(round(rsq, 3), round(aic_glm, 3))
+  Model = c("Linear Regression", "Polynomial Regression", "Ridge", "Lasso"),
+  Metric = c(
+    paste("MSE: ", round(lm_mse, 3)),
+    paste("MSE: ", round(poly_mse, 3)),
+    paste("MSE: ", round(ridge_mse, 3)),
+    paste("MSE: ", round(lasso_mse, 3))
+  )
 )
 
-print("Model Comparison (R-squared / AIC):")
+print("Model Comparison with MSE:")
 print(model_comparison)
 
-# Save models to disk for further analysis if needed
+#### Save Models ####
 saveRDS(lm_model, here::here("./models/lm_model.rds"))
-saveRDS(bayesian_model, here::here("./models/bayesian_model.rds"))
-saveRDS(glm_model, here::here("./models/glm_model.rds"))
+saveRDS(poly_model, here::here("./models/poly_model.rds"))
+saveRDS(ridge_model, here::here("./models/ridge_model.rds"))
+saveRDS(lasso_model, here::here("./models/lasso_model.rds"))

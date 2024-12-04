@@ -14,6 +14,12 @@ library(testthat)
 # Load simulated data from the parquet file
 simulated_data <- read_parquet(here::here("./data/simulated_data/simulated_data.parquet"))
 
+#### Add `expenses_per_quota` column ####
+simulated_data <- simulated_data %>%
+  mutate(
+    expenses_per_quota = round(`Total Expenses` / `Total Enrolment`, 3)  # Add and round to 3 decimals
+  )
+
 #### Define sanity check function ####
 # Function to perform tests on the dataset
 run_sanity_checks <- function(data, dataset_name) {
@@ -28,24 +34,28 @@ run_sanity_checks <- function(data, dataset_name) {
                 info = paste(dataset_name, "does not have between 5 and 1000 rows")
     )
     
-    # Ensure the dataset has exactly 11 columns
-    expect_equal(ncol(data), 11,
-                 info = paste(dataset_name, "does not have exactly 11 columns")
+    # Ensure the dataset has exactly 12 columns (new column added)
+    expect_equal(ncol(data), 12,
+                 info = paste(dataset_name, "does not have exactly 12 columns")
     )
     
-    # Confirm all required columns are present
+    # Confirm all required columns are present, including the new column
     required_cols <- c(
       "Board Number", "Board Name", "Region", "City",
       "Four Year Graduation Rate", "Total Expenses",
       "Expenditure on Facilities", "Total Enrolment",
-      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities"
+      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities", 
+      "expenses_per_quota"
     )
     expect_true(all(required_cols %in% colnames(data)),
                 info = paste(dataset_name, "is missing required columns")
     )
     
     #### Data type tests ####
-    # Check the types of key variables
+    # Check the types of key variables, including the new column
+    expect_type(data$expenses_per_quota, "double")
+    
+    # Existing type checks
     expect_type(data$`Board Number`, "character")
     expect_type(data$`Board Name`, "character")
     expect_type(data$Region, "character")
@@ -59,26 +69,25 @@ run_sanity_checks <- function(data, dataset_name) {
     expect_type(data$percentage_spent_on_facilities, "double")
     
     #### Value range tests ####
-    # Verify graduation rates are between 0 and 1
+    # Ensure expenses_per_quota is non-negative
+    expect_true(all(data$expenses_per_quota >= 0),
+                info = paste(dataset_name, "`expenses_per_quota` has negative values")
+    )
+    
+    # Graduation rate, expenses, and calculated percentage checks
     expect_true(all(data$`Four Year Graduation Rate` >= 0 & data$`Four Year Graduation Rate` <= 1),
                 info = paste(dataset_name, "`Four Year Graduation Rate` values are out of range")
     )
-    
-    # Ensure total expenses and facility expenditures are non-negative
     expect_true(all(data$`Total Expenses` >= 0),
                 info = paste(dataset_name, "`Total Expenses` has negative values")
     )
     expect_true(all(data$`Expenditure on Facilities` >= 0),
                 info = paste(dataset_name, "`Expenditure on Facilities` has negative values")
     )
-    
-    # Validate calculated percentages for facility expenditures
     calculated_percentage <- (data$`Expenditure on Facilities` / data$`Total Expenses`) * 100
     expect_true(all(abs(calculated_percentage - data$percentage_spent_on_facilities) < 1e-3),
                 info = paste(dataset_name, "`percentage_spent_on_facilities` is not calculated correctly")
     )
-    
-    # Confirm income and education percentages are between 0 and 100
     expect_true(all(data$percent_low_income >= 0 & data$percent_low_income <= 100),
                 info = paste(dataset_name, "`percent_low_income` values are out of range")
     )
@@ -92,10 +101,11 @@ run_sanity_checks <- function(data, dataset_name) {
       all(abs(x - round(x, 3)) < 1e-6)
     }
     
-    # Check all numeric columns for 3 decimal places
+    # Check all numeric columns for 3 decimal places, including the new column
     numeric_columns <- c(
       "Four Year Graduation Rate", "Total Expenses", "Expenditure on Facilities", 
-      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities"
+      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities", 
+      "expenses_per_quota"
     )
     for (col in numeric_columns) {
       expect_true(has_3_decimals(data[[col]]),

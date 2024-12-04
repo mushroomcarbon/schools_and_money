@@ -28,9 +28,9 @@ run_sanity_checks <- function(data, dataset_name) {
                 info = paste(dataset_name, "does not have between 5 and 1000 rows")
     )
     
-    # Ensure the dataset has exactly 11 columns
-    expect_equal(ncol(data), 11,
-                 info = paste(dataset_name, "does not have exactly 11 columns")
+    # Ensure the dataset has exactly 12 columns
+    expect_equal(ncol(data), 12,
+                 info = paste(dataset_name, "does not have exactly 12 columns")
     )
     
     # Confirm all required columns are present
@@ -38,7 +38,8 @@ run_sanity_checks <- function(data, dataset_name) {
       "Board Number", "Board Name", "Region", "City",
       "Four Year Graduation Rate", "Total Expenses",
       "Expenditure on Facilities", "Total Enrolment",
-      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities"
+      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities",
+      "expenses_per_quota"
     )
     expect_true(all(required_cols %in% colnames(data)),
                 info = paste(dataset_name, "is missing required columns")
@@ -57,6 +58,7 @@ run_sanity_checks <- function(data, dataset_name) {
     expect_type(data$percent_low_income, "double")
     expect_type(data$percent_no_degree, "double")
     expect_type(data$percentage_spent_on_facilities, "double")
+    expect_type(data$expenses_per_quota, "double")
     
     #### Value range tests ####
     # Verify graduation rates are between 0 and 1
@@ -78,6 +80,12 @@ run_sanity_checks <- function(data, dataset_name) {
                 info = paste(dataset_name, "`percentage_spent_on_facilities` is not calculated correctly")
     )
     
+    # Ensure `expenses_per_quota` is calculated correctly
+    calculated_quota <- data$`Total Expenses` / data$`Total Enrolment`
+    expect_true(all(abs(calculated_quota - data$expenses_per_quota) < 1e-3),
+                info = paste(dataset_name, "`expenses_per_quota` is not calculated correctly")
+    )
+    
     # Confirm income and education percentages are between 0 and 100
     expect_true(all(data$percent_low_income >= 0 & data$percent_low_income <= 100),
                 info = paste(dataset_name, "`percent_low_income` values are out of range")
@@ -95,7 +103,7 @@ run_sanity_checks <- function(data, dataset_name) {
     # Check all numeric columns for 3 decimal places
     numeric_columns <- c(
       "Four Year Graduation Rate", "Total Expenses", "Expenditure on Facilities", 
-      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities"
+      "percent_low_income", "percent_no_degree", "percentage_spent_on_facilities", "expenses_per_quota"
     )
     for (col in numeric_columns) {
       expect_true(has_3_decimals(data[[col]]),

@@ -89,19 +89,21 @@ final_data <- final_data%>%
 final_data <- final_data%>%
   rename("Four Year Graduation Rate" = `Four Year Graduation Rate 2019-2020 Grade 9 Cohort`)
 
-# Make sure numeric variables are numeric, and add a new column
+# Make sure numeric variables are numeric, and add new columns
 final_data <- final_data %>%
   mutate(
     `Expenditure on Facilities` = as.numeric(`Expenditure on Facilities`),
     `Four Year Graduation Rate` = as.numeric(`Four Year Graduation Rate`),
     `Total Expenses` = as.numeric(`Total Expenses`),
-    percentage_spent_on_facilities = (`Expenditure on Facilities` / `Total Expenses`) * 100
+    percentage_spent_on_facilities = (`Expenditure on Facilities` / `Total Expenses`) * 100,
+    expenses_per_quota = `Total Expenses` / `Total Enrolment` # Add expenses_per_quota
   )
 
 # Round everything to 3 decimal places
 final_data <- final_data %>%
   mutate(across(where(is.numeric), ~ round(. , 3)))
 
+# Remove rows with NA values
 final_data <- na.omit(final_data)
 
 # Save data as a parquet

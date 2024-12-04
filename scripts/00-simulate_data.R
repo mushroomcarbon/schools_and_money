@@ -30,9 +30,10 @@ simulated_data <- tibble(
   percent_low_income = round(runif(n_rows, 10, 50), 3),                            # Low-income percentage between 10% and 50%
   percent_no_degree = round(runif(n_rows, 5, 30), 3)                               # No-degree percentage between 5% and 30%
 ) %>%
-  # Calculate percentage_spent_on_facilities based on Total Expenses and Expenditure on Facilities
+  # Calculate additional columns
   mutate(
-    percentage_spent_on_facilities = round((`Expenditure on Facilities` / `Total Expenses`) * 100, 3)
+    percentage_spent_on_facilities = round((`Expenditure on Facilities` / `Total Expenses`) * 100, 3),
+    expenses_per_quota = round(`Total Expenses` / `Total Enrolment`, 3)             # Calculate expenses per quota
   )
 
 #### Save simulated data ####
@@ -42,5 +43,3 @@ write_parquet(simulated_data, here::here("./data/simulated_data/simulated_data.p
 #### Summary ####
 # Print a message indicating the data simulation is complete
 cat("Simulated data saved to './data/simulated_data/simulated_data.parquet'.\n")
-
-

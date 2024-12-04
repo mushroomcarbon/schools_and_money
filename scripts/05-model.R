@@ -10,19 +10,21 @@ library(tidyverse)
 library(arrow)
 library(broom)
 library(caret)
-library(glmnet)      # For Ridge and Lasso regression
+library(glmnet) # For Ridge and Lasso regression
 
 #### Load data ####
 analysis_data <- read_parquet(here::here("./data/analysis_data/analysis_data.parquet"))
 
 #### Data Preprocessing ####
 data <- analysis_data %>%
-  dplyr::select(`Four Year Graduation Rate`, 
-                percent_no_degree, 
-                percent_low_income, 
-                percentage_spent_on_facilities,
-                expenses_per_quota,
-                `Total Enrolment`)
+  dplyr::select(
+    `Four Year Graduation Rate`,
+    percent_no_degree,
+    percent_low_income,
+    percentage_spent_on_facilities,
+    expenses_per_quota,
+    `Total Enrolment`
+  )
 
 # Normalize data
 data_scaled <- data %>%
@@ -46,13 +48,15 @@ lasso_best_lambda <- lasso_cv$lambda.min
 lasso_model <- glmnet(x, y, alpha = 1, lambda = lasso_best_lambda)
 
 #### Polynomial Regression ####
-poly_model <- lm(`Four Year Graduation Rate` ~ 
-                   poly(percent_no_degree, 2) + 
-                   poly(percent_low_income, 2) +
-                   poly(percentage_spent_on_facilities, 2) +
-                   poly(expenses_per_quota, 2) +
-                   poly(`Total Enrolment`, 2),
-                 data = data_scaled)
+poly_model <- lm(
+  `Four Year Graduation Rate` ~
+    poly(percent_no_degree, 2) +
+    poly(percent_low_income, 2) +
+    poly(percentage_spent_on_facilities, 2) +
+    poly(expenses_per_quota, 2) +
+    poly(`Total Enrolment`, 2),
+  data = data_scaled
+)
 
 #### Model Comparison with MSE ####
 # Predictions

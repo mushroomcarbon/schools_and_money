@@ -31,20 +31,24 @@ analysis_data <- read_parquet(here::here("./data/analysis_data/analysis_data.par
 
 # Create summary statistics
 summary_stats <- analysis_data %>%
-  summarise(across(c(`Four Year Graduation Rate`, 
-                     `Total Expenses`, 
-                     `Total Enrolment`,
-                     percentage_spent_on_facilities,
-                     expenses_per_quota,
-                     percent_no_degree,
-                     percent_low_income),
-                   list(
-                     Mean = ~mean(., na.rm = TRUE),
-                     SD = ~sd(., na.rm = TRUE),
-                     Min = ~min(., na.rm = TRUE),
-                     Max = ~max(., na.rm = TRUE),
-                     Median = ~median(., na.rm = TRUE)
-                   )))
+  summarise(across(
+    c(
+      `Four Year Graduation Rate`,
+      `Total Expenses`,
+      `Total Enrolment`,
+      percentage_spent_on_facilities,
+      expenses_per_quota,
+      percent_no_degree,
+      percent_low_income
+    ),
+    list(
+      Mean = ~ mean(., na.rm = TRUE),
+      SD = ~ sd(., na.rm = TRUE),
+      Min = ~ min(., na.rm = TRUE),
+      Max = ~ max(., na.rm = TRUE),
+      Median = ~ median(., na.rm = TRUE)
+    )
+  ))
 
 # Create scaled version for modeling
 data_scaled <- analysis_data %>%
@@ -55,7 +59,6 @@ poly_model <- readRDS(here("models", "poly_model.rds"))
 lm_model <- readRDS(here("models", "lm_model.rds"))
 ridge_model <- readRDS(here("models", "ridge_model.rds"))
 lasso_model <- readRDS(here("models", "lasso_model.rds"))
-
 ```
 
 # Introduction
@@ -76,7 +79,7 @@ The remainder of this paper is organized as follows: @sec-data describes our dat
 
 ## Overview
 
-We use the statistical programming language R [@citer] for the analysis and presentation of the project. The tidyverse [@tidyverse] ecosystem, particularly dplyr [@dplyr], was used for data manipulation. For model development and evaluation, we utilized caret [@caret] for model training and glmnet [@glmnet1; @glmnet2; @glmnet3] for regularized regression methods. The arrow [@arrow] package was employed for efficient data reading and writing, while broom [@broom] was used for converting statistical objects into tidy data frames. Additional file management was facilitated by the here [@here] package.
+We use the statistical programming language R [@citer] for the analysis and presentation of the project. The tidyverse [@tidyverse] ecosystem, particularly dplyr [@dplyr], was used for data manipulation. For model development and evaluation, we utilized caret [@caret] for model training and glmnet [@glmnet1; @glmnet2; @glmnet3] for regularized regression methods. The arrow [@arrow] package was employed for efficient data reading and writing, while broom [@broom] was used for converting statistical objects into tidy data frames. Additional file management was facilitated by the here [@here] package. Styler [@styler] was used to style the code.
 
 In order to build a model predicting the effect that various variables on the school-district-level have on their academic successes, we used three datasets from the Ontario government's Open Data portal: the School Board Achievements and Progress dataset [@achievements], the School Board Financial Reports dataset [@financial], and the School Information and Student Demographics dataset [@demographics], each recording different information on school district organised by district ID.
 
@@ -107,14 +110,17 @@ Several important limitations that must be acknowledged exist in the data collec
 
 summary_stats %>%
   mutate(
-    across(contains("Total Expenses"), ~./1e9),  # Convert to billions
-    across(contains("Total Enrolment"), ~./1000)  # Convert to thousands
+    across(contains("Total Expenses"), ~ . / 1e9), # Convert to billions
+    across(contains("Total Enrolment"), ~ . / 1000) # Convert to thousands
   ) %>%
-  pivot_longer(everything(), 
-               names_to = c("Variable", "Statistic"), 
-               names_pattern = "(.+)_(.+)") %>%
-  pivot_wider(names_from = Statistic, 
-             values_from = value) %>%
+  pivot_longer(everything(),
+    names_to = c("Variable", "Statistic"),
+    names_pattern = "(.+)_(.+)"
+  ) %>%
+  pivot_wider(
+    names_from = Statistic,
+    values_from = value
+  ) %>%
   gt() %>%
   fmt_number(
     columns = c(Mean, SD, Min, Max, Median),
@@ -146,45 +152,58 @@ summary_stats %>%
 # First half of columns
 knitr::kable(
   analysis_data |>
-    select(`Board Number`,
-           `Board Name`,
-           Region,
-           City,
-           `Four Year Graduation Rate`,
-           `Total Expenses`) |>
+    select(
+      `Board Number`,
+      `Board Name`,
+      Region,
+      City,
+      `Four Year Graduation Rate`,
+      `Total Expenses`
+    ) |>
     slice(1:5) |>
     mutate(Region = str_replace(Region, "Region ", "")),
-  col.names = c("Board ID",
-                "Name",
-                "Region",
-                "City",
-                "Grad Rate",
-                "Total Expenses ($)"),
+  col.names = c(
+    "Board ID",
+    "Name",
+    "Region",
+    "City",
+    "Grad Rate",
+    "Total Expenses ($)"
+  ),
   digits = c(0, 0, 0, 0, 3, 3),
-  booktabs = TRUE)
+  booktabs = TRUE
+)
 ```
+
 ```{r}
 #| label: tbl-snapshot2
 #| tbl-cap: "Sample of First Five Rows from Ontario School Board Dataset (Part 2)"
-
+#| echo: false
+#| warning: false
+#| message: false
 # Second half of columns
 knitr::kable(
   analysis_data |>
-    select(`Expenditure on Facilities`,
-           `Total Enrolment`,
-           percent_low_income,
-           percent_no_degree,
-           percentage_spent_on_facilities,
-           expenses_per_quota) |>
+    select(
+      `Expenditure on Facilities`,
+      `Total Enrolment`,
+      percent_low_income,
+      percent_no_degree,
+      percentage_spent_on_facilities,
+      expenses_per_quota
+    ) |>
     slice(1:5),
-  col.names = c("Facility Expenses ($)",
-                "Enrolment",
-                "Low Income (%)",
-                "No Degree (%)",
-                "Facilities (%)",
-                "$/Student"),
+  col.names = c(
+    "Facility Expenses ($)",
+    "Enrolment",
+    "Low Income (%)",
+    "No Degree (%)",
+    "Facilities (%)",
+    "$/Student"
+  ),
   digits = c(3, 0, 3, 3, 3, 3),
-  booktabs = TRUE)
+  booktabs = TRUE
+)
 ```
 
 \FloatBarrier
@@ -205,8 +224,10 @@ The outcome variable is the four-year graduation rate for Ontario school boards,
 #| warning: false
 ggplot(analysis_data, aes(x = `Four Year Graduation Rate`)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Four Year Graduation Rate (%)",
-       y = "Number of School Boards") +
+  labs(
+    x = "Four Year Graduation Rate (%)",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -228,8 +249,10 @@ The predictor variables in our analysis include the percentage of school board b
 #| warning: false
 ggplot(analysis_data, aes(x = percentage_spent_on_facilities)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Percentage Spent on Facilities",
-       y = "Number of School Boards") +
+  labs(
+    x = "Percentage Spent on Facilities",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -247,8 +270,10 @@ The percentage of budget allocated to facilities maintenance and operations rang
 #| warning: false
 ggplot(analysis_data, aes(x = expenses_per_quota)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Expenses per Student ($)",
-       y = "Number of School Boards") +
+  labs(
+    x = "Expenses per Student ($)",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -266,8 +291,10 @@ As per @fig-perquota, per-student expenses show considerable variation across bo
 #| warning: false
 ggplot(analysis_data, aes(x = percent_no_degree)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Percentage of Students Without Parents Holding a Post-Secondary Degree",
-       y = "Number of School Boards") +
+  labs(
+    x = "Percentage of Students Without Parents Holding a Post-Secondary Degree",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -285,8 +312,10 @@ As can be seen in @fig-parents, the percentage of students whose parents do not 
 #| warning: false
 ggplot(analysis_data, aes(x = percent_low_income)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Percentage of Students in Low Income Families",
-       y = "Number of School Boards") +
+  labs(
+    x = "Percentage of Students in Low Income Families",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -302,10 +331,12 @@ The percentage of students from low-income households ranges from 10.35% to 25.9
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(analysis_data, aes(x = `Total Enrolment`/1000)) +
+ggplot(analysis_data, aes(x = `Total Enrolment` / 1000)) +
   geom_histogram(fill = "#2c7bb6", color = "white", alpha = 0.8) +
-  labs(x = "Total Enrolment (Thousands)",
-       y = "Number of School Boards") +
+  labs(
+    x = "Total Enrolment (Thousands)",
+    y = "Number of School Boards"
+  ) +
   theme_minimal()
 ```
 
@@ -392,19 +423,21 @@ library(tidyverse)
 library(arrow)
 library(broom)
 library(caret)
-library(glmnet)      # For Ridge and Lasso regression
+library(glmnet) # For Ridge and Lasso regression
 
 #### Load data ####
 analysis_data <- read_parquet(here::here("./data/analysis_data/analysis_data.parquet"))
 
 #### Data Preprocessing ####
 data <- analysis_data %>%
-  dplyr::select(`Four Year Graduation Rate`, 
-                percent_no_degree, 
-                percent_low_income, 
-                percentage_spent_on_facilities,
-                expenses_per_quota,
-                `Total Enrolment`)
+  dplyr::select(
+    `Four Year Graduation Rate`,
+    percent_no_degree,
+    percent_low_income,
+    percentage_spent_on_facilities,
+    expenses_per_quota,
+    `Total Enrolment`
+  )
 
 # Normalize data
 data_scaled <- data %>%
@@ -428,13 +461,15 @@ lasso_best_lambda <- lasso_cv$lambda.min
 lasso_model <- glmnet(x, y, alpha = 1, lambda = lasso_best_lambda)
 
 #### Polynomial Regression ####
-poly_model <- lm(`Four Year Graduation Rate` ~ 
-                   poly(percent_no_degree, 2) + 
-                   poly(percent_low_income, 2) +
-                   poly(percentage_spent_on_facilities, 2) +
-                   poly(expenses_per_quota, 2) +
-                   poly(`Total Enrolment`, 2),
-                 data = data_scaled)
+poly_model <- lm(
+  `Four Year Graduation Rate` ~
+    poly(percent_no_degree, 2) +
+    poly(percent_low_income, 2) +
+    poly(percentage_spent_on_facilities, 2) +
+    poly(expenses_per_quota, 2) +
+    poly(`Total Enrolment`, 2),
+  data = data_scaled
+)
 
 #### Model Comparison with MSE ####
 # Predictions
@@ -484,9 +519,11 @@ The polynomial regression model showed the lowest MSE, which indicates that it h
 ggplot(data.frame(residuals = residuals(poly_model)), aes(sample = residuals)) +
   stat_qq() +
   stat_qq_line() +
-  labs(title = "Normal Q-Q Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
+  labs(
+    title = "Normal Q-Q Plot",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
   theme_minimal()
 ```
 ```{r}
@@ -497,14 +534,20 @@ ggplot(data.frame(residuals = residuals(poly_model)), aes(sample = residuals)) +
 #| warning: false
 
 # Residuals vs Fitted
-ggplot(data.frame(fitted = fitted(poly_model), 
-                 residuals = residuals(poly_model)), 
-       aes(x = fitted, y = residuals)) +
+ggplot(
+  data.frame(
+    fitted = fitted(poly_model),
+    residuals = residuals(poly_model)
+  ),
+  aes(x = fitted, y = residuals)
+) +
   geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Residuals vs Fitted Values",
-       x = "Fitted Values",
-       y = "Residuals") +
+  labs(
+    title = "Residuals vs Fitted Values",
+    x = "Fitted Values",
+    y = "Residuals"
+  ) +
   theme_minimal()
 ```
 
@@ -523,8 +566,10 @@ ggplot(data.frame(fitted = fitted(poly_model),
 
 metrics <- tibble(
   Metric = c("R-squared", "RMSE"),
-  Value = c(summary(poly_model)$r.squared, 
-            sqrt(mean(residuals(poly_model)^2)))
+  Value = c(
+    summary(poly_model)$r.squared,
+    sqrt(mean(residuals(poly_model)^2))
+  )
 )
 
 metrics %>%
@@ -644,7 +689,7 @@ tidy_poly %>%
 
 ### Parental Education
 
-The percentage of households without post-secondary degrees shows the strongest relationship with graduation rates (β = -3.627, p = 0.003). After converting from standardized units back to real-world units, this relationship suggests that for every one percentage point increase in households without post-secondary degrees, graduation rates decrease by approximately 0.136 percentage points, holding other factors constant.
+The percentage of households without post-secondary degrees shows the strongest relationship with graduation rates ($β$ = -3.627, p = 0.003). After converting from standardized units back to real-world units, this relationship suggests that for every one percentage point increase in households without post-secondary degrees, graduation rates decrease by approximately 0.136 percentage points, holding other factors constant.
 
 ### Facilities Spending
 
@@ -654,20 +699,26 @@ The percentage of households without post-secondary degrees shows the strongest 
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(data_scaled, aes(x = percentage_spent_on_facilities, 
-                        y = `Four Year Graduation Rate`)) +
+ggplot(data_scaled, aes(
+  x = percentage_spent_on_facilities,
+  y = `Four Year Graduation Rate`
+)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", 
-              formula = y ~ poly(x, 2), 
-              se = TRUE) +
-  labs(x = "Percentage Spent on Facilities (Standardized)",
-       y = "Graduation Rate (Standardized)") +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ poly(x, 2),
+    se = TRUE
+  ) +
+  labs(
+    x = "Percentage Spent on Facilities (Standardized)",
+    y = "Graduation Rate (Standardized)"
+  ) +
   theme_minimal()
 ```
 
 \FloatBarrier
 
-The percentage spent on facilities shows a significant negative linear relationship (β = -2.435, p = 0.023), as illustrated in @fig-facilities. After converting from standardized units back to real-world units, this suggests that for each additional percentage point of budget allocated to facilities, graduation rates decrease by about 0.197 percentage points, holding other factors constant. In other words, boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates, possibly indicating trade-offs between infrastructure spending and other educational resources.
+The percentage spent on facilities shows a significant negative linear relationship ($β$ = -2.435, p = 0.023), as illustrated in @fig-facilities. After converting from standardized units back to real-world units, this suggests that for each additional percentage point of budget allocated to facilities, graduation rates decrease by about 0.197 percentage points, holding other factors constant. In other words, boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates, possibly indicating trade-offs between infrastructure spending and other educational resources.
 
 ### Per-Student Expenses
 
@@ -677,20 +728,26 @@ The percentage spent on facilities shows a significant negative linear relations
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(data_scaled, aes(x = expenses_per_quota, 
-                        y = `Four Year Graduation Rate`)) +
+ggplot(data_scaled, aes(
+  x = expenses_per_quota,
+  y = `Four Year Graduation Rate`
+)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", 
-              formula = y ~ poly(x, 2), 
-              se = TRUE) +
-  labs(x = "Expenses per Student (Standardized)",
-       y = "Graduation Rate (Standardized)") +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ poly(x, 2),
+    se = TRUE
+  ) +
+  labs(
+    x = "Expenses per Student (Standardized)",
+    y = "Graduation Rate (Standardized)"
+  ) +
   theme_minimal()
 ```
 
 \FloatBarrier
 
-Per-student expenses show a marginally significant quadratic relationship (β = 1.932, p = 0.085), as shown in @fig-expenses. After converting from standardized units back to real-world units, while not significant at the conventional p < 0.05 level, there appears to be a U-shaped trend in the relationship between per-student spending and graduation rates. This suggests that graduation rates tend to decrease with initial increases in per-student spending up to a certain threshold, after which additional spending is associated with increasing graduation rates. However, given the lack of statistical significance, these trends should be interpreted with caution.
+Per-student expenses show a marginally significant quadratic relationship ($β$ = 1.932, p = 0.085), as shown in @fig-expenses. After converting from standardized units back to real-world units, while not significant at the conventional p < 0.05 level, there appears to be a U-shaped trend in the relationship between per-student spending and graduation rates. This suggests that graduation rates tend to decrease with initial increases in per-student spending up to a certain threshold, after which additional spending is associated with increasing graduation rates. However, given the lack of statistical significance, these trends should be interpreted with caution.
 
 ## Secondary Findings
 
@@ -702,20 +759,26 @@ Per-student expenses show a marginally significant quadratic relationship (β = 
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(data_scaled, aes(x = `Total Enrolment`, 
-                        y = `Four Year Graduation Rate`)) +
+ggplot(data_scaled, aes(
+  x = `Total Enrolment`,
+  y = `Four Year Graduation Rate`
+)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", 
-              formula = y ~ poly(x, 2), 
-              se = TRUE) +
-  labs(x = "Total Enrolment (Standardized)",
-       y = "Graduation Rate (Standardized)") +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ poly(x, 2),
+    se = TRUE
+  ) +
+  labs(
+    x = "Total Enrolment (Standardized)",
+    y = "Graduation Rate (Standardized)"
+  ) +
   theme_minimal()
 ```
 
 \FloatBarrier
 
-As shown in @fig-size, Total Enrolment showed no statistically significant relationship with graduation rates (linear term: β = 0.249, p = 0.842; quadratic term: β = -0.186, p = 0.871). This suggests that the size of the school board, measured by enrollment, has minimal impact on graduation outcomes, with each additional thousand students associated with a non-significant change of 0.00053 percentage points in graduation rates once converted back into real-world units.
+As shown in @fig-size, Total Enrolment showed no statistically significant relationship with graduation rates (linear term: $β$ = 0.249, p = 0.842; quadratic term: $β$ = -0.186, p = 0.871). This suggests that the size of the school board, measured by enrollment, has minimal impact on graduation outcomes, with each additional thousand students associated with a non-significant change of 0.00053 percentage points in graduation rates once converted back into real-world units.
 
 ### Model Fit
 
@@ -725,13 +788,19 @@ As shown in @fig-size, Total Enrolment showed no statistically significant relat
 #| echo: false
 #| message: false
 #| warning: false
-ggplot(data_scaled, aes(x = fitted(poly_model), 
-                        y = `Four Year Graduation Rate`)) +
+ggplot(data_scaled, aes(
+  x = fitted(poly_model),
+  y = `Four Year Graduation Rate`
+)) +
   geom_point(alpha = 0.6) +
-  geom_abline(intercept = 0, slope = 1, 
-              color = "red", linetype = "dashed") +
-  labs(x = "Predicted Graduation Rate (Standardized)",
-       y = "Actual Graduation Rate (Standardized)") +
+  geom_abline(
+    intercept = 0, slope = 1,
+    color = "red", linetype = "dashed"
+  ) +
+  labs(
+    x = "Predicted Graduation Rate (Standardized)",
+    y = "Actual Graduation Rate (Standardized)"
+  ) +
   theme_minimal()
 ```
 
@@ -743,17 +812,13 @@ ggplot(data_scaled, aes(x = fitted(poly_model),
 
 ## Key Findings and Implications
 
-Our analysis reveals several important insights about the factors influencing graduation rates in Ontario school boards. The most striking finding is the strong negative relationship between the percentage of households without post-secondary degrees and graduation rates. This relationship suggests an intergenerational aspect to educational achievement, where students from communities with lower educational attainment face additional challenges in completing their secondary education.
+The key takeaway from the model results is the strong negative relationship between the percentage of households without post-secondary degrees and graduation rates. This relationship suggests an intergenerational aspect to educational achievement, where students from communities with lower educational attainment face additional challenges in completing their secondary education.
 
-The complex relationship between per-student expenses and graduation rates is particularly noteworthy. The U-shaped relationship we observed suggests that simply increasing funding may not always lead to better outcomes. This finding aligns with previous research suggesting that the effectiveness of educational spending depends heavily on how resources are allocated [@educationspending]. School boards might benefit from examining the spending patterns of high-performing boards that operate in the "efficient" region of this curve.
+The non-linear relationship between per-student expenses and graduation rates is particularly noteworthy. The U-shaped relationship we observed suggests that simply increasing funding may not always lead to better outcomes. This finding aligns with previous research suggesting that the effectiveness of educational spending depends heavily on how resources are allocated [@educationspending]. School boards might benefit from examining the spending patterns of high-performing boards that operate in the "efficient" region of this curve.
 
 ## Resource Allocation Trade-offs
 
-The negative relationship between facilities spending and graduation rates raises important questions about resource allocation. While maintaining adequate facilities is crucial for educational delivery, our findings suggest that boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates. This could indicate that:
-
-1.  Some boards might be forced to prioritize urgent infrastructure needs over other educational resources
-2.  Older facilities requiring more maintenance might be concentrated in areas facing other socioeconomic challenges
-3.  There might be an optimal balance between infrastructure investment and direct educational spending
+The negative relationship between facilities spending and graduation rates raises important questions about resource allocation. While maintaining adequate facilities is crucial for educational delivery, our findings suggest that boards allocating a larger proportion of their budget to facilities tend to have lower graduation rates. This could indicate that: some boards might be forced to prioritize urgent infrastructure needs over other educational resources, older facilities requiring more maintenance might be concentrated in areas facing other socioeconomic challenges, or that there might potentially be an optimal balance between infrastructure investment and direct educational spending, and further research in this direction is advised.
 
 ## Limitations
 
@@ -761,39 +826,19 @@ Several limitations of our analysis should be noted:
 
 ### Data Constraints
 
-1.  Our analysis is cross-sectional, looking at a single academic year (2019-2020)
-2.  The COVID-19 pandemic may have influenced both spending patterns and graduation rates during this period
-3.  We lack data on important factors such as:
-    -   Teacher qualifications and experience
-    -   Specific program offerings
-    -   Student-level characteristics
+Our analysis is cross-sectional, looking at a single academic year (2023-2024). Therefore, trends existing in this model might not exist in previous years, and vice versa. Additionally, due to privacy concerns, lack of granularity in the data and similar reasons, more specific predictors such as the teacher-to-student ratio and student-to-faculty ratio as well as data specifically recording expenditures on libraries are lacking. This potentially led to the model not being able to utilise enough, or ideal, predictors in its training.
 
 ### Methodological Considerations
 
-1.  Our polynomial regression model, while capturing non-linear relationships, may not fully represent more complex interactions between variables
-2.  The R-squared value of 0.404 suggests that substantial variation in graduation rates remains unexplained by our model
-3.  The standardization of variables, while necessary for our analysis, makes direct interpretation of effect sizes less intuitive
+Our polynomial regression model, while capturing non-linear relationships, may not fully represent more complex interactions between variables that are of higher degrees. The R-squared value of 0.404 suggests that substantial variation in graduation rates remains unexplained by our model, which again is likely due to the lack of data as mentioned above.
 
 ## Future Research Directions
 
-Several promising avenues for future research emerge from our findings:
-
-1.  **Longitudinal Analysis**: Examining how these relationships evolve over time could provide insights into the long-term effects of different spending patterns and policy changes.
-
-2.  **Program-Level Analysis**: Investigating specific educational programs and interventions could help identify which approaches are most effective at improving graduation rates, particularly in communities with lower educational attainment.
-
-3.  **Resource Allocation Optimization**: Developing models to help school boards optimize their resource allocation decisions, particularly regarding the balance between facilities maintenance and other educational spending.
-
-4.  **Policy Implications**: Studying how provincial funding formulas might be adjusted to better support boards facing particular challenges, such as aging infrastructure or high concentrations of socioeconomic disadvantage.
+Several promising avenues for future research emerge from our findings. A longitudinal analysis examining how these relationships evolve over time could provide insights into the long-term effects of different spending patterns and policy changes. At a more granular level, investigating specific educational programs and interventions could help identify which approaches are most effective at improving graduation rates, particularly in communities with lower educational attainment. Future research could also focus on developing models to help school boards optimize their resource allocation decisions, particularly regarding the balance between facilities maintenance and other educational spending. Finally, studying how provincial funding formulas might be adjusted to better support boards facing particular challenges, such as aging infrastructure or high concentrations of socioeconomic disadvantage, would provide valuable policy insights.
 
 ## Broader Context
 
-Our findings contribute to the ongoing discussion about educational equity in Ontario. The strong relationship between community educational attainment and graduation rates suggests that breaking cycles of educational disadvantage may require interventions that extend beyond the school system itself. This might include:
-
-1.  Community-based programs to support adult education
-2.  Enhanced early childhood education initiatives
-3.  Targeted support for communities with historically lower educational attainment
-4.  Integrated approaches that address both educational and broader socioeconomic factors
+Our findings contribute to the ongoing discussion about educational equity in Ontario. The strong relationship between community educational attainment and graduation rates suggests that breaking cycles of educational disadvantage may require interventions that extend beyond the school system itself. This might include community-based programs to support adult education, enhanced early childhood education initiatives, targeted support for communities with historically lower educational attainment, and/or integrated approaches that address both educational and broader socioeconomic factors
 
 The complex relationships we've identified between financial resources and educational outcomes also suggest that policy makers should consider more nuanced approaches to school funding, moving beyond simple per-student funding formulas to consider the specific contexts and challenges faced by different school boards.
 
@@ -803,11 +848,55 @@ The complex relationships we've identified between financial resources and educa
 
 # Appendix {.unnumbered}
 
-# Additional data details
-
 # Model details {#sec-model-details}
 
-## Posterior predictive check
+```{r}
+#| label: fig-appendix-cook
+#| fig-cap: "Cook's Distance Plot"
+#| echo: false
+#| message: false
+#| warning: false
+
+plot(cooks.distance(poly_model),
+  type = "h",
+  main = "Cook's Distance",
+  ylab = "Cook's Distance",
+  xlab = "Observation Number"
+)
+abline(
+  h = 4 / length(cooks.distance(poly_model)),
+  col = "red",
+  lty = 2
+)
+```
+
+\FloatBarrier
+
+# Model Diagnostics
+
+@fig-appendix-cook shows Cook's distance for each observation, helping identify potentially influential data points. The dashed red line indicates a commonly used threshold of 4/n for identifying influential observations.
+
+This diagnostic helps assess the validity of our model assumptions and identify potential areas of concern in our analysis.
+
+# Data Collection and Sampling Considerations
+
+## Overview of Data Collection Process
+
+The data used in this analysis comes from a complex, multi-source collection process that merges administrative data from Ontario school boards with demographic information and standardized test results. Understanding this process is crucial for interpreting our results and identifying potential sources of bias.
+
+## Administrative Data Collection
+
+The Education Financial Information System (EFIS) serves as the primary collection mechanism for financial data. School boards submit standardized financial reports through EFIS, which then undergoes several quality control steps. These steps include automated validation checks for mathematical accuracy and internal consistency, cross-reference checks against previous years' submissions, manual review by Ministry staff for anomalous patterns, and opportunities for boards to explain unusual variations.
+
+## Sampling Frame and Coverage
+
+While our dataset represents the complete population of public school boards in Ontario, it's important to note that this itself is a subset of all educational institutions in Ontario. Specifically, our sampling frame excludes private schools, First Nations schools, and adult education centers. This coverage limitation affects the generalizability of our findings.
+
+## Implications for Analysis
+
+These data collection and measurement considerations have several implications for our analysis. Our focus on English-language public boards means our findings may not generalize to other educational contexts in Ontario, while financial data, being self-reported, may contain systematic measurement error. Furthermore, different variables are measured at different times throughout the school year, potentially introducing temporal misalignment in our cross-sectional analysis, and as stated by Data Ontario [@ontario_cell_reference], data missing from the raw dataset is not missing completely at random (MCAR), which could introduce bias and/or artificially inflated variance in our estimates.
+
+These limitations suggest several directions for future data collection efforts. Future work should consider expanding coverage to include private institutions, implementing standardized reporting periods across all variables, developing more robust validation procedures for self-reported financial data, and creating linked datasets that allow for longitudinal analysis.
 
 \newpage
 

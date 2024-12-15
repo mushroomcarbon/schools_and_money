@@ -1,8 +1,8 @@
-# A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors
+# A 1% Increase in The Proportion of Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors
 
 ## Overview
 
-This repo contains the related scripts, files, and other information related to the creation and presentation of the paper "A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors", which analyzes the correlations between various predictors related to Ontario School District data and the average 4-year graduation rate of the district. 
+This repo contains the related scripts, files, and other information related to the creation and presentation of the paper "A 1% Increase in The Proportion of Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors", which analyzes the correlations between various predictors related to Ontario School District data and the average 4-year graduation rate of the district. 
 
 
 ## File Structure

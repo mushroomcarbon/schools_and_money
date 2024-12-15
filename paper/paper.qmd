@@ -1,5 +1,5 @@
 ---
-title: "A 1% Increase in Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors"
+title: "A 1% Increase in The Proportion of Spending on Facilities Decreases Graduation Rates by 0.2%: An Analysis on Ontario School Districts and Related Predictors"
 author: Andrew Goh
 thanks: "Code and data are available at: https://github.com/mushroomcarbon/schools_and_money"
 date: today
@@ -344,17 +344,11 @@ ggplot(analysis_data, aes(x = `Total Enrolment` / 1000)) +
 
 @fig-enroll shows that total enrolment across boards ranges from 710 to 231,480 students, with a mean of 28,450 students. This wide range reflects Ontario's diverse school board sizes, from small rural boards to large urban districts.
 
-## Feature Selection
+## Feature Engineering, Selection, and Extraction
 
-The selection of these specific predictor variables was guided by both theoretical relevance and statistical considerations regarding multicollinearity. Initial exploratory analysis revealed strong correlations between several potential predictors. For instance, total expenses and total enrolment showed an extremely high correlation (r \> 0.95), as larger boards naturally have higher total expenses. Similarly, various socioeconomic indicators such as median household income, unemployment rates, and low-income status demonstrated substantial overlap in their variation. To address these multicollinearity concerns, we selected representative variables that captured distinct aspects of school board characteristics while minimizing redundancy:
+The selection of these specific predictor variables was guided by both theoretical relevance and statistical considerations regarding multicollinearity. Initial exploratory analysis revealed strong correlations between several potential predictors. For instance, total expenses and total enrolment showed an extremely high correlation (r \> 0.95), as larger boards naturally have higher total expenses. Similarly, various socioeconomic indicators such as median household income, unemployment rates, and low-income status demonstrated substantial overlap in their variation. To address these multicollinearity concerns, we used feature engineering, extraction, and selection to isolate representative variables that capture distinct aspects of school board characteristics while minimizing redundancy:
 
-1.  Per-student expenses was chosen over total expenses to control for board size and provide a standardized measure of financial resources.
-
-2.  Percentage spent on facilities was retained as it represents a unique aspect of resource allocation independent of overall spending levels, as well as being reminiscent of the author's initial driving question of whether increased spending on libraries would correlate with better academic performance.
-
-3.  Among socioeconomic indicators, the percentage of low-income students and parental education levels were selected as they captured different dimensions of socioeconomic status while maintaining relatively low correlation with each other (r \< 0.4).
-
-4.  Total enrolment was included as a control variable to account for potential scale effects that might influence graduation rates independently of other factors.
+Per-student expenses were calculated from total expenses and total enrolment and was chosen as the analysis metric in the financial dimension over total expenses to control for board size and provide a standardized measure of financial resource usage that can be compared in an isolated environment. Percentage spent on facilities was retained as it represents a unique aspect of resource allocation independent of overall spending levels, as well as being reminiscent of the author's initial driving question of whether increased spending on libraries would correlate with better academic performance. Among the (highly intercorrelated) various socioeconomic indicators, the percentage of low-income students and parental education levels were selected as they captured different dimensions of socioeconomic status while maintaining relatively low correlation with each other (r \< 0.4). Total enrolment was included as a control variable to account for potential scale effects that might influence graduation rates independently of other factors. This, combined with expenses per capita, still include all the information that was present in the original total expenses feature, but in the form of two less-correlated variables that can be individually considered and analysed with an additive model.
 
 Feature selection helps ensure our analysis avoids the statistical issues associated with multicollinearity while still capturing the key factors that may influence academic performance.
 
